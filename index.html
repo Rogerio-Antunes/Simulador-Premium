@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+
+<title>White Lion Investment Terminal</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#001D29;
+color:white;
+padding:40px;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+}
+
+.card{
+background:#0c2a38;
+padding:25px;
+margin-bottom:25px;
+border-radius:10px;
+}
+
+input{
+width:100%;
+padding:10px;
+margin:6px 0;
+}
+
+button{
+background:#B89E6E;
+border:none;
+padding:12px;
+width:100%;
+cursor:pointer;
+}
+
+.result{
+background:white;
+color:black;
+padding:20px;
+margin-top:20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>White Lion Investment Simulator</h2>
+
+<div class="card">
+
+<label>Idade</label>
+<input id="idade" type="number" value="70">
+
+<label>Esperança de vida</label>
+<input id="vida" type="number" value="85">
+
+<label>Valor do imóvel</label>
+<input id="valor" type="number" value="300000">
+
+<label>Valorização anual (%)</label>
+<input id="valorizacao" type="number" value="3">
+
+<label>Yield alvo (%)</label>
+<input id="yield" type="number" value="10">
+
+<label>Margem White Lion</label>
+<input id="margem" type="number" value="20000">
+
+<label>Financiamento (%)</label>
+<input id="fin" type="number" value="70">
+
+<label>Taxa de juros (%)</label>
+<input id="juros" type="number" value="4">
+
+<label>Anos do empréstimo</label>
+<input id="anosEmprestimo" type="number" value="20">
+
+<button onclick="calcular()">Calcular</button>
+
+<button onclick="gerarPDF()">Gerar PDF</button>
+
+<div class="result" id="resultado"></div>
+
+</div>
+
+</div>
+
+<script>
+
+function prestacao(P,i,n){
+
+i=i/100/12
+n=n*12
+
+return P*(i*Math.pow(1+i,n))/(Math.pow(1+i,n)-1)
+
+}
+
+function saldoDivida(P,i,n,mes){
+
+i=i/100/12
+n=n*12
+
+let saldo=P
+
+for(let k=0;k<mes;k++){
+
+saldo=saldo*(1+i)-prestacao(P,i*12,n/12)
+
+}
+
+return saldo
+
+}
+
+function irr(cash){
+
+let r=0.1
+
+for(let j=0;j<1000;j++){
+
+let npv=0
+
+let dnpv=0
+
+for(let t=0;t<cash.length;t++){
+
+npv+=cash[t]/Math.pow(1+r,t)
+
+dnpv+=-t*cash[t]/Math.pow(1+r,t+1)
+
+}
+
+r=r-npv/dnpv
+
+}
+
+return r
+
+}
+
+function calcular(){
+
+let idade=parseFloat(document.getElementById("idade").value)
+
+let vida=parseFloat(document.getElementById("vida").value)
+
+let valor=parseFloat(document.getElementById("valor").value)
+
+let val=parseFloat(document.getElementById("valorizacao").value)/100
+
+let yield=parseFloat(document.getElementById("yield").value)/100
+
+let margem=parseFloat(document.getElementById("margem").value)
+
+let fin=parseFloat(document.getElementById("fin").value)/100
+
+let juros=parseFloat(document.getElementById("juros").value)
+
+let anosEmp=parseFloat(document.getElementById("anosEmprestimo").value)
+
+let anos=vida-idade
+
+let valorFuturo=valor*Math.pow(1+val,anos)
+
+let precoNuda=valorFuturo/Math.pow(1+yield,anos)
+
+let valorImovel=precoNuda+margem
+
+let financiamento=precoNuda*fin
+
+let prest=prestacao(financiamento,juros,anosEmp)
+
+let equity=(precoNuda-financiamento)+margem
+
+let meses=anos*12
+
+let cash=[-equity]
+
+for(let i=1;i<=meses;i++){
+
+cash.push(-prest)
+
+}
+
+let saldo=saldoDivida(financiamento,juros,anosEmp,meses)
+
+cash[cash.length-1]+=valorFuturo-saldo
+
+let irrEquity=irr(cash)*12
+
+document.getElementById("resultado").innerHTML=
+
+"Preço máximo nua propriedade: "+Math.round(precoNuda)+" €<br><br>"+
+
+"Valor do imóvel com margem: "+Math.round(valorImovel)+" €<br><br>"+
+
+"Prestação mensal: "+Math.round(prest)+" €<br><br>"+
+
+"Equity investido: "+Math.round(equity)+" €<br><br>"+
+
+"IRR capitais próprios: "+(irrEquity*100).toFixed(2)+" %"
+
+}
+
+function gerarPDF(){
+
+const {jsPDF}=window.jspdf
+
+let doc=new jsPDF()
+
+let texto=document.getElementById("resultado").innerText
+
+doc.text("White Lion Investment Report",20,20)
+
+doc.text(texto,20,40)
+
+doc.save("white-lion-report.pdf")
+
+}
+
+</script>
+
+</body>
+
+</html>
