@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>White Lion | Investment Terminal (Premium)</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    :root{
+      /* Brand book palette */
+      --wl-ink:#001D29;
+      --wl-ink2:#004056;
+      --wl-gold:#B89E6E;
+
+      /* Terminal UI */
+      --panelBorder:rgba(255,255,255,0.08);
+      --panelBg:rgba(0,0,0,0.18);
+      --panelBg2:rgba(255,255,255,0.05);
+      --text:#e8f0f4;
+      --muted:rgba(232,240,244,0.68);
+      --shadow:0 14px 40px rgba(0,0,0,0.35);
+      --r:14px;
+      --r2:18px;
+
+      --good:#5ad27d;
+      --warn:#ffd166;
+      --bad:#ff5d5d;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:
+        radial-gradient(900px 500px at 20% 0%, rgba(0,64,86,0.45), transparent 60%),
+        radial-gradient(700px 420px at 85% 20%, rgba(184,158,110,0.18), transparent 55%),
+        linear-gradient(135deg, var(--wl-ink), var(--wl-ink2));
+      color:var(--text);
+    }
+
+    .app{ display:grid; grid-template-columns:280px 1fr; min-height:100vh; }
+
+    .sidebar{
+      padding:18px 16px;
+      background: linear-gradient(180deg, rgba(0,29,41,0.92), rgba(0,29,41,0.82));
+      border-right:1px solid rgba(255,255,255,0.08);
+      position:sticky; top:0; height:100vh; overflow:auto;
+    }
+
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      padding:10px 10px 14px;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      margin-bottom:14px;
+    }
+    .logo{
+      width:44px;height:44px;border-radius:12px;
+      background: linear-gradient(135deg, rgba(184,158,110,0.95), rgba(184,158,110,0.55));
+      display:grid;place-items:center;
+      box-shadow:0 10px 25px rgba(0,0,0,0.28);
+      overflow:hidden;
+    }
+    .brand h1{
+      margin:0;
+      font-family:"Playfair Display",serif;
+      font-weight:700;
+      font-size:18px;
+      letter-spacing:0.3px;
+      line-height:1.05;
+    }
+    .brand .sub{ font-size:12px; color:var(--muted); margin-top:4px; }
+
+    .nav{ display:flex; flex-direction:column; gap:10px; padding:10px; }
+    .pill{
+      display:flex; justify-content:space-between; align-items:center;
+      gap:10px; padding:10px 12px; border-radius:12px;
+      background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.06);
+    }
+    .pill b{ font-size:12px; letter-spacing:.4px; text-transform:uppercase }
+    .pill span{ font-size:12px; color:var(--muted); }
+
+    .sectionTitle{
+      margin:16px 10px 8px;
+      font-size:12px; color:rgba(255,255,255,0.62);
+      letter-spacing:.45px; text-transform:uppercase;
+    }
+
+    .form{ padding:10px; display:flex; flex-direction:column; gap:10px; }
+    label{ font-size:12px; color:rgba(232,240,244,0.82); margin-bottom:6px; display:block; }
+
+    input,select{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(0,0,0,0.18);
+      color:var(--text);
+      outline:none;
+    }
+    input:focus,select:focus{
+      border-color:rgba(184,158,110,0.55);
+      box-shadow:0 0 0 3px rgba(184,158,110,0.15);
+    }
+    .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+    .switchRow{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:10px 12px; border-radius:12px;
+      background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.06);
+    }
+    .switchRow small{ color:var(--muted); }
+
+    .hidden{ display:none; }
+
+    .btn{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid rgba(184,158,110,0.55);
+      background: linear-gradient(135deg, rgba(184,158,110,0.95), rgba(184,158,110,0.60));
+      color:#081a22;
+      font-weight:800;
+      letter-spacing:.4px;
+      cursor:pointer;
+      box-shadow:0 10px 25px rgba(0,0,0,0.22);
+    }
+    .btn.secondary{
+      margin-top:8px;
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);
+      color:var(--text);
+      font-weight:700;
+      box-shadow:none;
+    }
+
+    .note{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.5;
+      padding:10px 12px;
+      border-radius:14px;
+      background:rgba(184,158,110,0.08);
+      border:1px solid rgba(184,158,110,0.18);
+      margin-top:10px;
+    }
+
+    /* Main */
+    .main{ padding:18px 18px 28px; }
+
+    .topbar{
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+      padding:12px 14px;
+      border-radius:var(--r2);
+      background:var(--panelBg);
+      border:1px solid var(--panelBorder);
+      box-shadow:var(--shadow);
+      margin-bottom:14px;
+    }
+    .topbar .title{ display:flex; flex-direction:column; gap:4px; }
+    .topbar .title h2{
+      margin:0; font-family:"Playfair Display",serif;
+      font-size:22px; letter-spacing:.2px;
+    }
+    .topbar .title .meta{ font-size:12px; color:var(--muted); }
+    .topbar .actions{ display:flex; gap:10px; }
+    .chip{
+      padding:10px 12px; border-radius:999px;
+      border:1px solid rgba(184,158,110,0.28);
+      background:rgba(184,158,110,0.10);
+      color:rgba(232,240,244,0.92);
+      font-size:12px; display:flex; gap:8px; align-items:center; white-space:nowrap;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background:var(--wl-gold);
+      box-shadow:0 0 0 4px rgba(184,158,110,0.18);
+    }
+
+    .grid{ display:grid; grid-template-columns:1.15fr 0.85fr; gap:14px; }
+
+    .panel{
+      border-radius:var(--r2);
+      background:var(--panelBg);
+      border:1px solid var(--panelBorder);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .panelHeader{
+      padding:12px 14px;
+      display:flex; justify-content:space-between; align-items:center;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(180deg, rgba(0,0,0,0.14), rgba(0,0,0,0.06));
+    }
+    .panelHeader b{
+      font-size:12px;
+      letter-spacing:.55px;
+      text-transform:uppercase;
+      color:rgba(232,240,244,0.85);
+    }
+    .panelHeader span{ font-size:12px; color:var(--muted); }
+    .panelBody{ padding:14px; }
+
+    .kpis{ display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; }
+    .kpi{
+      padding:12px;
+      border-radius:var(--r);
+      background:var(--panelBg2);
+      border:1px solid rgba(255,255,255,0.07);
+      position:relative; overflow:hidden;
+    }
+    .kpi:before{
+      content:"";
+      position:absolute;
+      inset:-40px -40px auto auto;
+      width:120px;height:120px;
+      background:radial-gradient(circle at 30% 30%, rgba(184,158,110,0.22), transparent 60%);
+      transform:rotate(25deg);
+    }
+    .kpi .label{
+      font-size:11px;
+      color:rgba(232,240,244,0.70);
+      letter-spacing:.4px;
+      text-transform:uppercase;
+    }
+    .kpi .value{ margin-top:8px; font-size:18px; font-weight:800; letter-spacing:.2px; }
+    .kpi .hint{ margin-top:6px; font-size:12px; color:var(--muted); }
+
+    .split{ display:grid; grid-template-columns:1fr; gap:14px; }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.08);
+      background:rgba(255,255,255,0.04);
+      overflow:hidden;
+    }
+    th,td{
+      padding:10px 10px;
+      font-size:12px;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      color:rgba(232,240,244,0.90);
+      text-align:left;
+      vertical-align:top;
+    }
+    th{
+      font-size:11px;
+      letter-spacing:.5px;
+      text-transform:uppercase;
+      color:rgba(232,240,244,0.75);
+      background:rgba(0,0,0,0.12);
+    }
+    tr:last-child td{ border-bottom:none; }
+
+    canvas{
+      width:100% !important;
+      height:260px !important;
+      background:rgba(255,255,255,0.02);
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:14px;
+      padding:8px;
+    }
+
+    @media (max-width:1080px){
+      .app{ grid-template-columns:1fr; }
+      .sidebar{ position:relative; height:auto; }
+      .grid{ grid-template-columns:1fr; }
+      .kpis{ grid-template-columns:repeat(2, 1fr); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <!-- placeholder emblem -->
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2l7 3v7c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5l7-3z" fill="rgba(0,29,41,0.85)"/>
+            <path d="M8 11c.4-1.7 1.8-2.7 4-2.7s3.6 1 4 2.7c-.8-.5-1.7-.7-2.6-.7-.6 0-1.1.1-1.4.2-.3-.1-.8-.2-1.4-.2-.9 0-1.8.2-2.6.7z" fill="rgba(255,255,255,0.92)"/>
+            <path d="M9 15c.8.7 1.8 1.1 3 1.1s2.2-.4 3-1.1c-.4 1.8-1.8 3-3 3s-2.6-1.2-3-3z" fill="rgba(255,255,255,0.92)"/>
+          </svg>
+        </div>
+        <div>
+          <h1>WHITE LION</h1>
+          <div class="sub">Investment Terminal • Usufruto Vitalício</div>
+        </div>
+      </div>
+
+      <div class="nav">
+        <div class="pill"><b>Status</b><span id="statusText">Pronto</span></div>
+        <div class="pill"><b>Perfil</b><span>Bloomberg-style</span></div>
+        <div class="pill"><b>Moeda</b><span>EUR</span></div>
+      </div>
+
+      <div class="sectionTitle">Parâmetros</div>
+
+      <div class="form">
+        <div class="row2">
+          <div>
+            <label>Idade atual</label>
+            <input id="idade" type="number" min="0" step="1" value="70">
+          </div>
+          <div>
+            <label>Esperança de vida</label>
+            <input id="vida" type="number" min="0" step="1" value="85">
+          </div>
+        </div>
+
+        <div>
+          <label>Valor de mercado do imóvel (€)</label>
+          <input id="valor" type="number" min="0" step="1" value="300000">
+        </div>
+
+        <div class="row2">
+          <div>
+            <label>Valorização anual (%)</label>
+            <input id="valorizacao" type="number" step="0.01" value="3.0">
+          </div>
+          <div>
+            <label>Yield / IRR alvo (%)</label>
+            <input id="yield" type="number" step="0.01" value="10.0">
+          </div>
+        </div>
+
+        <div class="row2">
+          <div>
+            <label>Custo de escritura (€)</label>
+            <input id="escritura" type="number" step="1" value="1500">
+          </div>
+          <div>
+            <label>Margem White Lion (€)</label>
+            <input id="margem" type="number" step="1" value="20000">
+          </div>
+        </div>
+
+        <div class="switchRow">
+          <div>
+            <b style="font-size:12px;letter-spacing:.45px;text-transform:uppercase">Empréstimo bancário</b><br>
+            <small>Alavancagem + prestação (prazo independente)</small>
+          </div>
+          <select id="emprestimo" onchange="toggleFinanciamento()">
+            <option value="nao">Não</option>
+            <option value="sim" selected>Sim</option>
+          </select>
+        </div>
+
+        <div id="financiamentoCampos">
+          <div class="row2">
+            <div>
+              <label>Financiamento (%)</label>
+              <input id="financiamentoPerc" type="number" step="0.01" value="70">
+            </div>
+            <div>
+              <label>Taxa de juros (%)</label>
+              <input id="juros" type="number" step="0.01" value="4.0">
+            </div>
+          </div>
+
+          <div class="row2">
+            <div>
+              <label>Anos do empréstimo</label>
+              <input id="anosEmprestimo" type="number" step="1" min="1" value="20">
+            </div>
+            <div>
+              <label>IMT — base de cálculo</label>
+              <select id="imtBase" disabled>
+                <option value="preco" selected>Preço pago (nuda propriedade)</option>
+              </select>
+            </div>
+          </div>
+          <div class="note" style="margin-top:0">
+            IMT está fixo em “Preço pago (nuda propriedade)” (sem margem), como pediste.
+          </div>
+        </div>
+
+        <div class="sectionTitle">Risco & Simulação</div>
+
+        <div class="row2">
+          <div>
+            <label>Cenários (anos)</label>
+            <input id="cenarios" type="text" value="5,10,20">
+          </div>
+          <div>
+            <label>Incluir “Esperado”</label>
+            <select id="incluirEsperado">
+              <option value="sim" selected>Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row2">
+          <div>
+            <label>Monte Carlo — simulações</label>
+            <input id="mcRuns" type="number" min="100" step="100" value="2000">
+          </div>
+          <div>
+            <label>Monte Carlo — desvio padrão (anos)</label>
+            <input id="mcSdAnos" type="number" min="0" step="0.1" value="4.0">
+          </div>
+        </div>
+
+        <button class="btn" onclick="calcularTudo()">Calcular</button>
+        <button class="btn secondary" onclick="gerarPDF()">Gerar PDF (Relatório)</button>
+
+        <div class="note" id="modelNote">
+          Modelo: equity inclui “Margem White Lion”; prestação baseada no prazo do empréstimo; se o cenário terminar antes do empréstimo, a venda líquida deduz a dívida remanescente.
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="topbar">
+        <div class="title">
+          <h2>Dashboard de Underwriting</h2>
+          <div class="meta">Nuda propriedade + usufruto vitalício • prazo empréstimo independente • cenários • Monte Carlo • PDF</div>
+        </div>
+        <div class="actions">
+          <div class="chip"><span class="dot"></span><span id="lastCalc">Sem cálculo</span></div>
+          <div class="chip">White Lion • Premium</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- LEFT -->
+        <section class="panel">
+          <div class="panelHeader">
+            <b>KPIs Principais</b>
+            <span id="kpiSubtitle">—</span>
+          </div>
+          <div class="panelBody">
+            <div class="kpis" id="kpiGrid"></div>
+
+            <div style="height:14px"></div>
+
+            <div class="panelHeader" style="border-radius:14px; border:1px solid rgba(255,255,255,0.08); margin-bottom:10px;">
+              <b>IRR Capitais Próprios vs Longevidade</b>
+              <span>cenários + esperado</span>
+            </div>
+            <canvas id="chartScenario" aria-label="IRR por anos" role="img"></canvas>
+
+            <div class="note" id="riskNote">
+              Nos cenários: prestação é fixa (mesmo valor). Se o cenário terminar antes do empréstimo, a receita final é “valor futuro – dívida remanescente”.
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT -->
+        <section class="split">
+          <div class="panel">
+            <div class="panelHeader">
+              <b>Cenários</b>
+              <span>Venda líquida ajustada</span>
+            </div>
+            <div class="panelBody">
+              <div id="scenarioTableWrap"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panelHeader">
+              <b>Monte Carlo</b>
+              <span>Distribuição IRR (Capitais Próprios)</span>
+            </div>
+            <div class="panelBody">
+              <canvas id="chartMC" aria-label="Histograma Monte Carlo" role="img"></canvas>
+              <div id="mcStats" class="note" style="margin-top:10px">Sem cálculo.</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+<script>
+  // -----------------------
+  // State
+  // -----------------------
+  let state = { base:null, scenarios:[], mc:null, mcIrrs:[] };
+  let scenarioChart = null;
+  let mcChart = null;
+
+  // -----------------------
+  // Helpers
+  // -----------------------
+  function setStatus(msg){ document.getElementById("statusText").textContent = msg; }
+
+  function euro(n){
+    if(!isFinite(n)) return "—";
+    return "€" + Math.round(n).toLocaleString("pt-PT");
+  }
+  function pct(n){
+    if(!isFinite(n)) return "—";
+    return (n*100).toFixed(2) + " %";
+  }
+  function num(id){
+    const v = parseFloat(document.getElementById(id).value);
+    return isFinite(v) ? v : NaN;
+  }
+
+  function toggleFinanciamento(){
+    const opcao = document.getElementById("emprestimo").value;
+    const bloco = document.getElementById("financiamentoCampos");
+    if(opcao === "sim") bloco.classList.remove("hidden");
+    else bloco.classList.add("hidden");
+  }
+
+  // -----------------------
+  // Taxes (simplified IMT as your original)
+  // -----------------------
+  function calcularIMT(valor){
+    let imt = 0;
+    if(valor <= 97064) imt = valor * 0.01;
+    else if(valor <= 132774) imt = valor * 0.02 - 970.64;
+    else if(valor <= 181034) imt = valor * 0.05 - 3898.24;
+    else if(valor <= 301688) imt = valor * 0.07 - 7521.92;
+    else if(valor <= 603289) imt = valor * 0.08 - 10538.80;
+    else imt = valor * 0.06;
+    return Math.max(0, imt);
+  }
+
+  // -----------------------
+  // Loan math
+  // -----------------------
+  function prestacaoHipoteca(P, taxaAnualPct, anos){
+    if(P <= 0 || anos <= 0) return 0;
+    const n = Math.max(1, Math.round(anos*12));
+    const i = (taxaAnualPct/100)/12;
+    if(i === 0) return P/n;
+    return P * (i*Math.pow(1+i, n)) / (Math.pow(1+i, n) - 1);
+  }
+
+  // Remaining balance after k payments on an amortizing loan
+  function saldoRemanescente(P, taxaAnualPct, anos, kPagamentos){
+    if(P <= 0 || anos <= 0) return 0;
+    const n = Math.max(1, Math.round(anos*12));
+    const k = Math.max(0, Math.min(n, Math.round(kPagamentos)));
+    const i = (taxaAnualPct/100)/12;
+    if(i === 0){
+      // linear amortization
+      const paid = P*(k/n);
+      return Math.max(0, P - paid);
+    }
+    // Formula: B_k = P * ((1+i)^n - (1+i)^k) / ((1+i)^n - 1)
+    const a = Math.pow(1+i, n);
+    const b = Math.pow(1+i, k);
+    return P * (a - b) / (a - 1);
+  }
+
+  // -----------------------
+  // IRR (monthly), robust with Newton + bisection
+  // -----------------------
+  function irrMensal(cashflows){
+    const hasNeg = cashflows.some(x => x < 0);
+    const hasPos = cashflows.some(x => x > 0);
+    if(!hasNeg || !hasPos) return NaN;
+
+    function npv(r){
+      let s=0;
+      for(let t=0;t<cashflows.length;t++){
+        s += cashflows[t]/Math.pow(1+r, t);
+      }
+      return s;
+    }
+    function dnpv(r){
+      let s=0;
+      for(let t=1;t<cashflows.length;t++){
+        s += -t*cashflows[t]/Math.pow(1+r, t+1);
+      }
+      return s;
+    }
+
+    let r = 0.01;
+    for(let k=0;k<50;k++){
+      const f = npv(r), df = dnpv(r);
+      if(!isFinite(f) || !isFinite(df) || df === 0) break;
+      let nr = r - f/df;
+      if(nr <= -0.9999) nr = (r - 0.9999)/2;
+      if(Math.abs(nr - r) < 1e-8) return nr;
+      r = nr;
+    }
+
+    let lo = -0.9, hi = 2.0;
+    let flo = npv(lo), fhi = npv(hi);
+    if(!isFinite(flo) || !isFinite(fhi)) return NaN;
+
+    let tries=0;
+    while(flo*fhi > 0 && tries < 10){
+      hi *= 2;
+      fhi = npv(hi);
+      tries++;
+      if(!isFinite(fhi)) return NaN;
+    }
+    if(flo*fhi > 0) return NaN;
+
+    for(let k=0;k<80;k++){
+      const mid = (lo+hi)/2;
+      const fmid = npv(mid);
+      if(!isFinite(fmid)) return NaN;
+      if(Math.abs(fmid) < 1e-8) return mid;
+      if(flo*fmid < 0){ hi = mid; fhi = fmid; }
+      else { lo = mid; flo = fmid; }
+    }
+    return (lo+hi)/2;
+  }
+
+  function anualizarMensal(rm){
+    if(!isFinite(rm)) return NaN;
+    return Math.pow(1+rm, 12) - 1;
+  }
+
+  // -----------------------
+  // Validation & Core calc
+  // -----------------------
+  function validate(){
+    const idade = num("idade");
+    const vida = num("vida");
+    const valor = num("valor");
+    const valorizacao = num("valorizacao");
+    const yieldAlvo = num("yield");
+    const escritura = num("escritura");
+    const margem = num("margem");
+
+    if([idade,vida,valor,valorizacao,yieldAlvo,escritura,margem].some(v => !isFinite(v))){
+      return { ok:false, msg:"Preenche todos os campos numéricos base." };
+    }
+
+    const anosUsufruto = vida - idade;
+    if(!(anosUsufruto > 0)) return { ok:false, msg:"A esperança de vida deve ser maior do que a idade atual." };
+
+    const usaEmp = document.getElementById("emprestimo").value === "sim";
+
+    let financiamentoPerc=0, juros=0, anosEmp=0;
+    if(usaEmp){
+      financiamentoPerc = num("financiamentoPerc");
+      juros = num("juros");
+      anosEmp = num("anosEmprestimo");
+      if([financiamentoPerc, juros, anosEmp].some(v => !isFinite(v))){
+        return { ok:false, msg:"Preenche Financiamento (%), Taxa de juros (%) e Anos do empréstimo." };
+      }
+      if(financiamentoPerc < 0 || financiamentoPerc > 100) return { ok:false, msg:"Financiamento (%) deve estar entre 0 e 100." };
+      if(juros < 0) return { ok:false, msg:"Taxa de juros não pode ser negativa." };
+      if(anosEmp <= 0) return { ok:false, msg:"Anos do empréstimo deve ser > 0." };
+      financiamentoPerc /= 100;
+    }
+
+    return {
+      ok:true,
+      idade, vida,
+      anosUsufruto,
+      valor,
+      valorizacao: valorizacao/100,
+      yieldAlvo: yieldAlvo/100,
+      escritura,
+      margem,
+      usaEmp,
+      financiamentoPerc, juros, anosEmp
+    };
+  }
+
+  /**
+   * Calcula para um determinado "anosCenario" (longevidade do usufruto).
+   * Regras pedidas:
+   * - Prestação baseada em anosEmp (não no usufruto)
+   * - Equity inclui margem
+   * - IMT calculado sobre precoNuda (sem margem)
+   * - Prestação mensal: mesmo valor em todos os cenários, paga-se até ao fim do cenário OU fim do empréstimo.
+   * - Se cenário termina antes do empréstimo: receita final = valorFuturo - saldoRemanescente
+   */
+  function calcularParaAnos(anosCenario){
+    const v = validate();
+    if(!v.ok) return v;
+
+    const anos = anosCenario;
+
+    // Valor futuro do imóvel (a partir do valor de mercado input)
+    const valorFuturo = v.valor * Math.pow(1+v.valorizacao, anos);
+
+    // Preço máximo da nua propriedade (para atingir yield alvo no fim do usufruto)
+    const precoNuda = valorFuturo / Math.pow(1+v.yieldAlvo, anos);
+
+    // "Valor do imóvel" (custo ao cliente): nuda + margem (isto baixa IRR por aumentar investimento)
+    const custoImovelCliente = precoNuda + v.margem;
+
+    // IMT calculado sobre o preço da nuda (sem margem)
+    const imt = calcularIMT(precoNuda);
+    const impostoSelo = precoNuda * 0.008;
+
+    const custoTotalSemMargem = precoNuda + imt + impostoSelo + v.escritura;
+
+    // Empréstimo
+    let financiamento=0, prestacao=0, anosEmp=v.anosEmp, juros=v.juros;
+
+    if(v.usaEmp){
+      financiamento = precoNuda * v.financiamentoPerc;
+      prestacao = prestacaoHipoteca(financiamento, juros, anosEmp);
+    }
+
+    // Equity inclui margem (pedido)
+    // Equity = (custoTotalSemMargem - financiamento) + margem
+    const equity = (custoTotalSemMargem - financiamento) + v.margem;
+
+    // Cashflows mensais para IRR Equity:
+    const mesesCenario = Math.max(1, Math.round(anos*12));
+    const mesesEmp = v.usaEmp ? Math.max(1, Math.round(anosEmp*12)) : 0;
+    const mesesPagos = v.usaEmp ? Math.min(mesesCenario, mesesEmp) : 0;
+
+    const cfs = new Array(mesesCenario+1).fill(0);
+    cfs[0] = -equity;
+
+    // prestações fixas (mesmo valor) pagas até mesesPagos; depois 0
+    for(let m=1; m<=mesesCenario; m++){
+      cfs[m] = (m <= mesesPagos) ? -prestacao : 0;
+    }
+
+    // saldo remanescente se cenário termina antes do fim do empréstimo
+    let saldo = 0;
+    if(v.usaEmp && mesesCenario < mesesEmp){
+      saldo = saldoRemanescente(financiamento, juros, anosEmp, mesesCenario);
+    }
+
+    // receita final líquida = valorFuturo - saldo
+    const vendaLiquida = valorFuturo - saldo;
+    cfs[mesesCenario] += vendaLiquida;
+
+    const irrEqAnual = anualizarMensal(irrMensal(cfs));
+
+    // IRR Cliente (simples) — investimento = custoTotalSemMargem + margem (equivale a equity+financiamento? não necessariamente)
+    // Para ficar consistente com "custo ao cliente", usamos:
+    // investimentoCliente = custoTotalSemMargem + margem
+    const investimentoCliente = custoTotalSemMargem + v.margem;
+    const irrCliente = Math.pow(valorFuturo / investimentoCliente, 1/anos) - 1;
+
+    return {
+      ok:true,
+      anos,
+      valorAtual: v.valor,
+      valorFuturo,
+      precoNuda,
+      custoImovelCliente,
+      imt,
+      impostoSelo,
+      escritura: v.escritura,
+      custoTotalSemMargem,
+      margem: v.margem,
+      investimentoCliente,
+      irrCliente,
+      financiamento,
+      prestacao,
+      anosEmp: v.anosEmp,
+      juros: v.juros,
+      equity,
+      saldo,
+      vendaLiquida,
+      irrEqAnual
+    };
+  }
+
+  // -----------------------
+  // Scenarios + Monte Carlo
+  // -----------------------
+  function parseScenarios(){
+    const raw = (document.getElementById("cenarios").value || "").trim();
+    let arr = raw.split(",").map(s => parseFloat(s.trim())).filter(x => isFinite(x) && x > 0);
+    arr = Array.from(new Set(arr)).sort((a,b)=>a-b);
+    return arr;
+  }
+
+  function normalRand(){
+    let u=0,v=0;
+    while(u===0) u=Math.random();
+    while(v===0) v=Math.random();
+    return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+  }
+
+  function monteCarlo(expectedYears){
+    const runs = Math.max(100, Math.round(num("mcRuns")));
+    const sd = Math.max(0, num("mcSdAnos"));
+
+    const irrs = [];
+    const years = [];
+
+    for(let i=0;i<runs;i++){
+      let y = expectedYears + (sd>0 ? normalRand()*sd : 0);
+      y = Math.min(60, Math.max(1, y));
+      years.push(y);
+
+      const r = calcularParaAnos(y);
+      irrs.push(r.ok ? r.irrEqAnual : NaN);
+    }
+
+    const clean = irrs.filter(x => isFinite(x)).sort((a,b)=>a-b);
+    if(clean.length < 50) return { ok:false, msg:"Monte Carlo instável com os parâmetros atuais.", irrs:[] };
+
+    function q(p){
+      const idx = (clean.length-1)*p;
+      const lo = Math.floor(idx), hi = Math.ceil(idx);
+      if(lo===hi) return clean[lo];
+      const w = idx-lo;
+      return clean[lo]*(1-w) + clean[hi]*w;
+    }
+
+    const mean = clean.reduce((a,b)=>a+b,0)/clean.length;
+    const med = q(0.5);
+    const p10=q(0.10), p90=q(0.90), p25=q(0.25), p75=q(0.75);
+    const probNeg = clean.filter(x => x<0).length / clean.length;
+
+    years.sort((a,b)=>a-b);
+    const y10 = years[Math.floor((years.length-1)*0.10)];
+    const y90 = years[Math.floor((years.length-1)*0.90)];
+
+    return { ok:true, runs:clean.length, sd, mean, med, p10, p25, p75, p90, probNeg, y10, y90, irrs:clean };
+  }
+
+  // -----------------------
+  // Charts
+  // -----------------------
+  function makeScenarioChart(labels, dataPct){
+    const ctx = document.getElementById("chartScenario");
+    if(scenarioChart) scenarioChart.destroy();
+
+    scenarioChart = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels,
+        datasets:[{
+          label:'IRR Capitais Próprios (anual)',
+          data:dataPct, // percent values
+          tension:0.25,
+          pointRadius:3,
+          pointHoverRadius:5,
+          borderWidth:2,
+          borderColor:'rgba(184,158,110,0.95)',
+          backgroundColor:'rgba(184,158,110,0.18)',
+          fill:true
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            callbacks:{
+              label:(c)=> ` ${(c.raw).toFixed(2)} %`
+            }
+          }
+        },
+        scales:{
+          x:{
+            ticks:{color:'rgba(232,240,244,0.75)'},
+            grid:{color:'rgba(255,255,255,0.06)'}
+          },
+          y:{
+            ticks:{
+              color:'rgba(232,240,244,0.75)',
+              callback:(v)=> `${v}%`
+            },
+            grid:{color:'rgba(255,255,255,0.06)'}
+          }
+        }
+      }
+    });
+  }
+
+  function histogram(values, bins=18){
+    const v = values.filter(x => isFinite(x));
+    const min = Math.min(...v), max = Math.max(...v);
+    if(!isFinite(min) || !isFinite(max) || min===max){
+      return { labels:[""], counts:[v.length] };
+    }
+    const width = (max-min)/bins;
+    const counts = new Array(bins).fill(0);
+    for(const x of v){
+      let idx = Math.floor((x-min)/width);
+      if(idx === bins) idx = bins-1;
+      counts[idx]++;
+    }
+    const labels=[];
+    for(let i=0;i<bins;i++){
+      const a=min+i*width, b=a+width;
+      labels.push(`${(a*100).toFixed(0)}–${(b*100).toFixed(0)}%`);
+    }
+    return { labels, counts };
+  }
+
+  function makeMCChart(irrs){
+    const ctx = document.getElementById("chartMC");
+    if(mcChart) mcChart.destroy();
+
+    const h = histogram(irrs, 18);
+
+    mcChart = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels:h.labels,
+        datasets:[{
+          data:h.counts,
+          borderWidth:0,
+          backgroundColor:'rgba(0,64,86,0.55)',
+          hoverBackgroundColor:'rgba(184,158,110,0.65)'
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{ legend:{display:false} },
+        scales:{
+          x:{
+            ticks:{color:'rgba(232,240,244,0.75)', maxRotation:60, minRotation:30},
+            grid:{color:'rgba(255,255,255,0.06)'}
+          },
+          y:{
+            ticks:{color:'rgba(232,240,244,0.75)'},
+            grid:{color:'rgba(255,255,255,0.06)'}
+          }
+        }
+      }
+    });
+  }
+
+  // -----------------------
+  // UI render
+  // -----------------------
+  function renderKPIs(b){
+    const kpis = [
+      { label:"Valor atual (mercado)", value:euro(b.valorAtual), hint:"Input" },
+      { label:"Custo nuda (máx.)", value:euro(b.precoNuda), hint:"Sem margem" },
+      { label:"Margem White Lion", value:euro(b.margem), hint:"Acresce à equity" },
+      { label:"Custo ao cliente", value:euro(b.custoImovelCliente), hint:"nuda + margem" },
+
+      { label:"Equity (c/ margem)", value:euro(b.equity), hint:"(custo total - empréstimo) + margem" },
+      { label:"Empréstimo", value:euro(b.financiamento), hint:"nuda × financiamento" },
+      { label:"Prestação mensal", value:euro(b.prestacao), hint:`Prazo: ${b.anosEmp || "—"} anos` },
+      { label:"IRR equity (anual)", value:pct(b.irrEqAnual), hint:"Venda líquida ajustada" },
+    ];
+
+    const wrap = document.getElementById("kpiGrid");
+    wrap.innerHTML = kpis.map(k => `
+      <div class="kpi">
+        <div class="label">${k.label}</div>
+        <div class="value">${k.value}</div>
+        <div class="hint">${k.hint}</div>
+      </div>
+    `).join("");
+
+    document.getElementById("kpiSubtitle").textContent =
+      `IMT ${euro(b.imt)} • Selo ${euro(b.impostoSelo)} • Escritura ${euro(b.escritura)} • Custo total (sem margem) ${euro(b.custoTotalSemMargem)}`;
+  }
+
+  function renderScenarioTable(rows){
+    const html = `
+      <table>
+        <thead>
+          <tr>
+            <th>Anos</th>
+            <th>Prestação</th>
+            <th>Saldo dívida</th>
+            <th>Venda líquida</th>
+            <th>IRR equity</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td><b>${r.anos}</b></td>
+              <td>${r.prest}</td>
+              <td>${r.saldo}</td>
+              <td>${r.vendaLiq}</td>
+              <td>${r.irr}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+    document.getElementById("scenarioTableWrap").innerHTML = html;
+  }
+
+  function renderMCStats(mc){
+    const el = document.getElementById("mcStats");
+    if(!mc || !mc.ok){
+      el.textContent = mc?.msg || "Sem cálculo.";
+      return;
+    }
+    el.innerHTML = `
+      <b>Simulações:</b> ${mc.runs.toLocaleString("pt-PT")} • <b>SD longevidade:</b> ${mc.sd.toFixed(1)} anos •
+      <b>Faixa (anos):</b> P10 ${mc.y10.toFixed(1)} / P90 ${mc.y90.toFixed(1)}<br><br>
+      <b>Média:</b> ${pct(mc.mean)} • <b>Mediana:</b> ${pct(mc.med)}<br>
+      <b>P10/P90:</b> ${pct(mc.p10)} / ${pct(mc.p90)} • <b>P25/P75:</b> ${pct(mc.p25)} / ${pct(mc.p75)}<br>
+      <b>Prob(IRR &lt; 0%):</b> ${(mc.probNeg*100).toFixed(2)} %
+    `;
+  }
+
+  // -----------------------
+  // Main calculate
+  // -----------------------
+  function calcularTudo(){
+    setStatus("A calcular…");
+
+    const v = validate();
+    if(!v.ok){
+      setStatus("Erro");
+      alert(v.msg);
+      return;
+    }
+
+    const base = calcularParaAnos(v.anosUsufruto);
+    if(!base.ok){
+      setStatus("Erro");
+      alert(base.msg);
+      return;
+    }
+
+    // scenarios list
+    let sc = parseScenarios();
+    if(document.getElementById("incluirEsperado").value === "sim"){
+      if(!sc.includes(v.anosUsufruto)) sc.push(v.anosUsufruto);
+      sc.sort((a,b)=>a-b);
+    }
+
+    const rows = [];
+    const labels = [];
+    const irrPct = [];
+
+    for(const y of sc){
+      const r = calcularParaAnos(y);
+      if(!r.ok){
+        rows.push({anos:y, prest:"—", saldo:"—", vendaLiq:"—", irr:"—"});
+        continue;
+      }
+      rows.push({
+        anos:(Math.round(y*10)/10),
+        prest:euro(r.prestacao),
+        saldo:euro(r.saldo),
+        vendaLiq:euro(r.vendaLiquida),
+        irr:pct(r.irrEqAnual)
+      });
+
+      labels.push(`${(Math.round(y*10)/10)}a`);
+      irrPct.push(isFinite(r.irrEqAnual) ? r.irrEqAnual*100 : null);
+    }
+
+    // Monte Carlo around expected years
+    const mc = monteCarlo(v.anosUsufruto);
+
+    state.base = base;
+    state.scenarios = rows;
+    state.mc = mc;
+    state.mcIrrs = mc.ok ? mc.irrs : [];
+
+    renderKPIs(base);
+    renderScenarioTable(rows);
+    makeScenarioChart(labels, irrPct);
+
+    if(mc.ok) makeMCChart(mc.irrs);
+    else makeMCChart([0]);
+
+    renderMCStats(mc);
+
+    const now = new Date();
+    document.getElementById("lastCalc").textContent =
+      `Último cálculo: ${now.toLocaleDateString("pt-PT")} ${now.toLocaleTimeString("pt-PT", {hour:"2-digit", minute:"2-digit"})}`;
+
+    setStatus("Atualizado");
+  }
+
+  // -----------------------
+  // PDF
+  // -----------------------
+  function gerarPDF(){
+    if(!state.base){
+      alert("Primeiro clica em Calcular.");
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const b = state.base;
+    const mc = state.mc;
+
+    // Header
+    doc.setFillColor(0, 29, 41);
+    doc.rect(0, 0, 210, 24, "F");
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(14);
+    doc.text("WHITE LION — Relatório (Usufruto Vitalício)", 14, 16);
+
+    doc.setTextColor(30,40,48);
+    doc.setFontSize(11);
+
+    let y = 34;
+    const lh = 7;
+
+    function line(label, value){
+      doc.setTextColor(30,40,48);
+      doc.text(label, 14, y);
+      doc.setTextColor(0,64,86);
+      doc.text(String(value), 125, y);
+      y += lh;
+      if(y > 282){
+        doc.addPage();
+        y = 18;
+      }
+    }
+
+    // Required labels per your request
+    line("Valor Atual do Imóvel", euro(b.valorAtual));
+    line("Custo do Imóvel (nuda propriedade)", euro(b.precoNuda));
+    line("Anos esperados do usufruto", (Math.round(b.anos*10)/10) + " anos");
+    line("Capitais Próprios (Equity c/ margem)", euro(b.equity));
+    line("Empréstimo", euro(b.financiamento));
+    line("Valor da venda estimado", euro(b.valorFuturo));
+    line("Rentabilidade do Investimento (IRR Capitais Próprios)", pct(b.irrEqAnual));
+
+    y += 4;
+    doc.setDrawColor(184,158,110);
+    doc.line(14, y, 196, y);
+    y += 10;
+
+    // Additional detail (useful)
+    line("Margem White Lion", euro(b.margem));
+    line("Custo ao Cliente (nuda + margem)", euro(b.custoImovelCliente));
+    line("IMT (sobre nuda, sem margem)", euro(b.imt));
+    line("Imposto de selo (0,8%)", euro(b.impostoSelo));
+    line("Escritura", euro(b.escritura));
+    line("Custo total (sem margem)", euro(b.custoTotalSemMargem));
+    line("Taxa de juros", isFinite(b.juros) ? b.juros.toFixed(2) + " %" : "—");
+    line("Prazo do empréstimo", (b.anosEmp ? b.anosEmp : "—") + " anos");
+    line("Prestação mensal", euro(b.prestacao));
+    line("Saldo dívida no cenário esperado", euro(b.saldo));
+    line("Venda líquida no cenário esperado", euro(b.vendaLiquida));
+
+    y += 4;
+    doc.line(14, y, 196, y);
+    y += 10;
+
+    doc.setTextColor(30,40,48);
+    doc.text("Cenários de longevidade (venda líquida ajustada):", 14, y);
+    y += 8;
+    doc.setFontSize(9);
+    doc.setTextColor(60,70,80);
+
+    for(const r of state.scenarios){
+      const row = `• ${r.anos} anos | Prestação ${r.prest} | Saldo ${r.saldo} | Venda Líq. ${r.vendaLiq} | IRR ${r.irr}`;
+      doc.text(row, 14, y);
+      y += 6;
+      if(y > 282){
+        doc.addPage();
+        y = 18;
+      }
+    }
+
+    doc.setFontSize(10);
+    y += 4;
+
+    if(mc && mc.ok){
+      doc.setTextColor(30,40,48);
+      doc.text("Monte Carlo (IRR Capitais Próprios):", 14, y); y += 7;
+      doc.setTextColor(60,70,80);
+      doc.text(`Simulações: ${mc.runs} | SD longevidade: ${mc.sd.toFixed(1)} anos | P10/P90 (anos): ${mc.y10.toFixed(1)} / ${mc.y90.toFixed(1)}`, 14, y); y += 6;
+      doc.text(`Média: ${pct(mc.mean)} | Mediana: ${pct(mc.med)} | P10/P90: ${pct(mc.p10)} / ${pct(mc.p90)} | Prob(IRR<0%): ${(mc.probNeg*100).toFixed(2)}%`, 14, y);
+    }
+
+    doc.save("white-lion-relatorio-usufruto.pdf");
+  }
+
+  // init
+  toggleFinanciamento();
+  setStatus("Pronto");
+</script>
+</body>
+</html>
